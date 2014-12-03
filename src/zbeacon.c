@@ -406,6 +406,27 @@ s_agent_new (void *pipe, int port_nbr)
 #endif
     inaddr_t sockaddr = self->broadcast;
 #endif
+
+long a = sockaddr.sin_addr.s_addr;
+printf("binding beacon...1. local addr:%ld.%ld.%ld.%ld \n", 
+a & 0xFF,
+a>>8&0xFF, 
+a>>16&0xFF, 
+a>>24 
+ );
+
+    sockaddr = self->address;
+
+printf("binding beacon... %p\n", &sockaddr );
+printf("binding beacon... port:%d \n", htons(sockaddr.sin_port) );
+a = sockaddr.sin_addr.s_addr;
+printf("binding beacon...2. local addr:%ld.%ld.%ld.%ld \n", 
+a & 0xFF,
+a>>8&0xFF, 
+a>>16&0xFF, 
+a>>24 
+ );
+
     if (bind (self->udpsock, (struct sockaddr *) &sockaddr, sizeof (sockaddr)) == SOCKET_ERROR)
         zsys_socket_error ("bind");
 
@@ -465,13 +486,22 @@ s_get_interface (agent_t *self)
             }
             interface = interface->ifa_next;
         }
+printf("zsys_interface length: %d\n", (int)strlen(zsys_interface ()));
         if (strlen (zsys_interface ()) == 0) {
+printf("num_interfaces: %d\n", num_interfaces );
+                self->address = self->broadcast;
+                self->address.sin_addr.s_addr = INADDR_ANY;
+//                self->broadcast.sin_family = AF_INET;
+//                self->broadcast.sin_addr.s_addr = INADDR_BROADCAST;
+//                self->broadcast.sin_port = htons (self->port_nbr);
+
             if (num_interfaces == 0) {
                 //  Subnet broadcast addresses don't work on some platforms 
                 //  but is assumed to work if the interface is specified.
-                self->broadcast.sin_family = AF_INET;
-                self->broadcast.sin_addr.s_addr = INADDR_BROADCAST;
-                self->broadcast.sin_port = htons (self->port_nbr);
+//                self->broadcast.sin_family = AF_INET;
+//                self->broadcast.sin_addr.s_addr = INADDR_BROADCAST;
+//                self->broadcast.sin_port = htons (self->port_nbr);
+printf("WARNING, czmq beacon code has not found any interfaces!\n");
             }
             else
             if (num_interfaces > 1) {
@@ -479,10 +509,25 @@ s_get_interface (agent_t *self)
                 //  INADDR_ANY so self->hostname isn't set to an incorrect IP.
                 self->address = self->broadcast;
                 self->address.sin_addr.s_addr = INADDR_ANY;
+printf("WARNING, czmq beacon code has many options to choose from!\n");
             }
         }
     }
     freeifaddrs (interfaces);
+
+                self->address = self->broadcast;
+                self->address.sin_addr.s_addr = INADDR_ANY;
+
+printf("DEBUG POINT A REACHED...\n");
+printf("getting network setup...\n");
+printf("   port: %d \n", htons(self->broadcast.sin_port) );
+long a = self->broadcast.sin_addr.s_addr;
+printf("   addr: %ld.%ld.%ld.%ld \n", 
+a & 0xFF,
+a>>8&0xFF, 
+a>>16&0xFF, 
+a>>24 
+);
 
 #else
     //  Our default if we fail to find an interface
